@@ -1,0 +1,154 @@
+encoding=utf8
+[Actions]
+requiredWinstVersion >= "4.11.4"
+setloglevel="7"
+
+if not ("Windows_NT" = GetOS)
+	LogError "This product is for Windows only"
+	isFatalError "Wrong OS"
+endif
+
+if CompareDotSeparatedNumbers(GetMsVersionInfo,"6.3") < "0"
+	LogError "This product is for Windows 8.1 and up only"
+	isFatalError "Wrong WinVer"
+endif
+
+Message=Windows config ......
+ShowBitMap "%ScriptPath%\winconfig.png" "Win Config"
+
+sub_define_vars
+sub_get_properties
+
+comment "do patches"
+
+if $disable_fast_boot$ = "true"
+	Winbatch_hibernate_off /runelevated
+else
+	Winbatch_hibernate_on /runelevated
+endif
+
+if $disable_lock_screen$ = "true"
+	Registry_hklm_disable_lockscreen /sysnative
+else
+	Registry_hklm_enable_lockscreen /sysnative
+endif
+
+comment "Patch the local Profiles ..."
+ProfileActions
+
+ExitWindows /Reboot
+
+[ProfileActions]
+DefVar $doprofile$
+DefVar $force_login_script$
+
+comment "The profile part ..."
+set $doprofile$ = "true"
+
+if GetScriptMode = "Login"
+	comment "we are at login ..."
+	if getValue("installationstate", getProductMap) = "installed"
+		comment "Product is installed"
+		comment "should loginscript run on every login"
+		Set $force_login_script$ = GetProductProperty("force_login_script", "false")
+		comment "Did we run this script before ? - and set version stamp in profile"
+		if scriptWasExecutedBefore and ($force_login_script$ = "false")
+			comment "loginscript did run before - nothing to do"
+			set $doprofile$ = "false"
+		endif
+	else
+		comment "Product is not installed - so we do not patch the profile"
+		set $doprofile$ = "false"
+	endif
+	if $doprofile$ = "true"
+		Message=Windows config ......
+		ShowBitMap "%ScriptPath%\winconfig.png" "Win Config"
+		sub_define_vars
+		sub_get_properties
+	endif
+endif
+
+if $doprofile$ = "true"
+	comment "do patches"
+	
+	if $boot_to_desktop$ = "true"
+		Registry_hkcu_boot_to_desktop
+	else
+		Registry_hkcu_boot_to_app_screen
+	endif
+	
+	if $disable_charms$ = "true"
+		Registry_hkcu_charms_off
+	else
+		Registry_hkcu_charms_on
+	endif
+endif ; $doprofile$ = "true"
+
+;***********************
+;**    SUB-Sektion   ***
+;***********************
+
+[sub_define_vars]
+DefVar $boot_to_desktop$
+DefVar $disable_charms$
+DefVar $disable_fast_boot$
+DefVar $disable_lock_screen$
+
+[sub_get_properties]
+Set $boot_to_desktop$ = GetProductProperty("boot_to_desktop", "true")
+Set $disable_charms$ = GetProductProperty("disable_charms", "true")
+Set $disable_fast_boot$ = GetProductProperty("disable_fast_boot", "true")
+Set $disable_lock_screen$ = GetProductProperty("disable_lock_screen", "false")
+
+;***********************
+;**    HKLM-Entries ***
+;***********************
+
+[Registry_hklm_disable_fastboot]
+openkey [HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power]
+set "HiberbootEnabled"=reg_dword:0
+
+[Registry_hklm_disable_lockscreen]
+openkey [HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\Personalization]
+set "NoLockScreen"=reg_dword:1
+
+[Registry_hklm_enable_lockscreen]
+openkey [HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\Personalization]
+set "NoLockScreen"=reg_dword:0
+
+
+;***********************
+;**    HKCU-Enties ***
+;***********************
+
+;http://nealbuerger.com/2013/10/windows-8-1-boot-to-desktop/
+[Registry_hkcu_boot_to_desktop]
+openkey [HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartPage]
+set "OpenAtLogon"=reg_dword:0
+
+[Registry_hkcu_boot_to_app_screen]
+openkey [HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartPage]
+DeleteVar "OpenAtLogon"
+
+
+;http://www.techattend.com/disable-charms-bar-in-windows-8-1/
+;http://winaero.com/blog/how-to-disable-the-edge-panels-charms-bar-and-switcher-in-windows-8/
+[Registry_hkcu_charms_off]
+openkey [HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\ImmersiveShell\EdgeUI]
+set "DisableCharmsHint"=reg_dword:1
+
+[Registry_hkcu_charms_on]
+openkey [HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\ImmersiveShell\EdgeUI]
+set "DisableCharmsHint"=reg_dword:0
+
+;***********************
+;**    Winbatch ***
+;***********************
+
+;http://blogs.technet.com/b/keithmayer/archive/2012/11/05/supporting-windows-8-fast-startup-with-group-policy.aspx
+[Winbatch_hibernate_off]
+powercfg /hibernate off
+
+[Winbatch_hibernate_on]
+powercfg /hibernate on
+

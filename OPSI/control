@@ -1,0 +1,78 @@
+[Package]
+version: 3
+depends: 
+incremental: False
+
+[Product]
+type: localboot
+id: config-win81-desktop
+name: Windows Customizing for Win8.1 Desktop
+description: Customize Win 8.1 for Desktop only use
+advice: 
+version: 4.0.5
+priority: 0
+licenseRequired: False
+productClasses: 
+setupScript: setup.opsiscript
+uninstallScript: 
+updateScript: 
+alwaysScript: 
+onceScript: 
+customScript: 
+userLoginScript: setup.opsiscript
+
+[ProductProperty]
+type: bool
+name: boot_to_desktop
+description: Start Desktop directly after boot.
+default: True
+
+[ProductProperty]
+type: bool
+name: disable_fast_boot
+description: Disable Fastboot for proper opsi startup
+default: True
+
+[ProductProperty]
+type: bool
+name: disable_charms
+description: Disable Charms popin if mouse in corners
+default: True
+
+[ProductProperty]
+type: bool
+name: force_login_script
+default: False
+
+[ProductProperty]
+type: bool
+name: disable_lock_screen
+default: False
+
+[Changelog]
+config-win81-desktop (4.0.5-3) testing; urgency=low
+
+  * new property: disable_lock_screen
+  * win10 enabled
+
+ -- d.oertel <d.oertel@uib.de> Thu, 21 May 2015 15:00:00 + 0100
+
+config-win81-desktop (4.0.5-2) testing; urgency=low
+
+  * typo
+
+ -- d.oertel <d.oertel@uib.de> Mon, 19 Jan 2015 12:50:34 + 0100
+
+config-win81-desktop (4.0.5-1) testing; urgency=low
+
+  * Initial version derivated from config-win
+
+ -- d.oertel <d.oertel@uib.de> Fri, 16 Jan 2015 12:50:34 + 0100
+
+
+
+
+
+
+
+
